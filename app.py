@@ -1,16 +1,9 @@
-from flask import Flask, render_template, request, redirect, session, flash, send_from_directory
-import sqlite3
+#bienbuena
+from flask import Flask, render_template, request, redirect, session, flash
+import mysql.connector
 import os
 from fpdf import FPDF
 from datetime import datetime
-import smtplib
-from email.message import EmailMessage
-import threading
-import smtplib
-from email.message import EmailMessage
-
-
-
 
 # ------------------- APP -------------------
 
@@ -25,12 +18,12 @@ os.makedirs(PDF_FOLDER, exist_ok=True)
 
 # ------------------- BD -------------------
 
-DB_FILE = "serviciomed.db"
-
-def get_db_connection():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    return conn
+db = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="",
+    database="serviciomed"
+)
 
 # ------------------- PREFIJOS -------------------
 
@@ -60,117 +53,24 @@ def generar_pdf_examen(formulario, expediente):
     pdf.ln(4)
 
     pdf.set_font("Helvetica", size=9)
+
     for campo, valor in formulario.items():
         campo = campo.replace("_", " ").capitalize()
         texto = str(valor).replace("\n", " ").replace("\r", " ")
+
+        # Campo + valor juntos
         linea = f"{campo}: {texto}"
+
         pdf.multi_cell(ancho_util, 5, linea)
-        pdf.ln(1)
+        pdf.ln(1)  # espacio mínimo entre campos
 
     fecha = datetime.now().strftime("%Y%m%d_%H%M%S")
     nombre_pdf = f"examen_{expediente}_{fecha}.pdf"
-    ruta = os.path.join(PDF_FOLDER, nombre_pdf)
+    ruta = os.path.join("examenes", nombre_pdf)
 
     pdf.output(ruta)
     return nombre_pdf
-def enviar_pdf_async(ruta_pdf, nombre_pdf):
-    def enviar():
-        try:
-            import smtplib
-            from email.message import EmailMessage
 
-            EMAIL_USER = os.environ.get("EMAIL_USER")
-            EMAIL_PASS = os.environ.get("EMAIL_PASS")
-
-            if not EMAIL_USER or not EMAIL_PASS:
-                print("❌ Variables de entorno de correo no configuradas")
-                return
-
-            msg = EmailMessage()
-            msg["Subject"] = "Nuevo examen médico recibido"
-            msg["From"] = EMAIL_USER
-            msg["To"] = EMAIL_USER
-            msg.set_content("Se adjunta el examen médico en PDF.")
-
-            with open(ruta_pdf, "rb") as f:
-                msg.add_attachment(
-                    f.read(),
-                    maintype="application",
-                    subtype="pdf",
-                    filename=nombre_pdf
-                )
-
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-                smtp.login(EMAIL_USER, EMAIL_PASS)
-                smtp.send_message(msg)
-
-            print("✅ Correo enviado correctamente")
-
-        except Exception as e:
-            print("❌ Error enviando correo:", e)
-
-    threading.Thread(target=enviar).start()
-
-
-def enviar_pdf_por_correo(ruta_pdf):
-    email_user = os.environ.get("EMAIL_USER")
-    email_pass = os.environ.get("EMAIL_PASS")
-
-    if not email_user or not email_pass:
-        print("❌ Faltan variables de entorno EMAIL_USER o EMAIL_PASS")
-        return
-
-    msg = EmailMessage()
-    msg["Subject"] = "Nuevo examen médico recibido"
-    msg["From"] = email_user
-    msg["To"] = email_user
-    msg.set_content("Se ha enviado un nuevo examen médico en PDF.")
-
-    with open(ruta_pdf, "rb") as f:
-        msg.add_attachment(
-            f.read(),
-            maintype="application",
-            subtype="pdf",
-            filename=os.path.basename(ruta_pdf)
-        )
-
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(email_user, email_pass)
-            server.send_message(msg)
-        print("✅ Correo enviado correctamente")
-    except Exception as e:
-        print("❌ Error al enviar correo:", e)
-
-
-def enviar_pdf_por_correo(ruta_pdf, nombre_pdf):
-    try:
-        EMAIL_USER = os.environ.get("EMAIL_USER")
-        EMAIL_PASS = os.environ.get("EMAIL_PASS")
-        EMAIL_DESTINO = os.environ.get("EMAIL_DESTINO")
-
-        msg = EmailMessage()
-        msg["Subject"] = "Nuevo examen médico recibido"
-        msg["From"] = EMAIL_USER
-        msg["To"] = EMAIL_DESTINO
-        msg.set_content("Se ha enviado un nuevo examen médico en PDF.")
-
-        with open(ruta_pdf, "rb") as f:
-            msg.add_attachment(
-                f.read(),
-                maintype="application",
-                subtype="pdf",
-                filename=nombre_pdf
-            )
-
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as smtp:
-            smtp.login(EMAIL_USER, EMAIL_PASS)
-            smtp.send_message(msg)
-
-        print("📧 Correo enviado correctamente")
-
-    except Exception as e:
-        print("❌ ERROR enviando correo:", e)
 
 # ------------------- LOGIN -------------------
 
@@ -180,12 +80,13 @@ def login():
         nombre = request.form["nombre"]
         password = request.form["password"]
 
-        conn = get_db_connection()
-        usuario = conn.execute(
-            "SELECT * FROM usuarios WHERE nombre=? AND password=?",
+        cursor = db.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT * FROM usuarios WHERE nombre=%s AND password=%s",
             (nombre, password)
-        ).fetchone()
-        conn.close()
+        )
+        usuario = cursor.fetchone()
+        cursor.close()
 
         if usuario:
             session["usuario"] = usuario["nombre"]
@@ -205,32 +106,38 @@ def registro():
         password = request.form["password"]
         carrera = request.form["carrera"]
 
-        conn = get_db_connection()
-        existe = conn.execute(
-            "SELECT * FROM usuarios WHERE nombre=? AND carrera=?",
+        cursor = db.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT * FROM usuarios WHERE nombre=%s AND carrera=%s",
             (nombre, carrera)
-        ).fetchone()
+        )
+        existe = cursor.fetchone()
+        cursor.close()
 
         if existe:
             flash("⚠️ Usuario ya registrado", "warning")
-            conn.close()
             return redirect("/login")
 
         prefijo = PREFIJOS.get(carrera, "XXX")
-        row = conn.execute(
-            "SELECT expediente FROM usuarios WHERE carrera=? ORDER BY expediente DESC LIMIT 1",
+
+        cursor = db.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT expediente FROM usuarios WHERE carrera=%s ORDER BY expediente DESC LIMIT 1",
             (carrera,)
-        ).fetchone()
+        )
+        row = cursor.fetchone()
+        cursor.close()
 
         ultimo = int(row["expediente"][len(prefijo):]) if row else 0
         expediente = f"{prefijo}{str(ultimo + 1).zfill(2)}"
 
-        conn.execute(
-            "INSERT INTO usuarios (nombre,password,carrera,expediente) VALUES (?,?,?,?)",
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO usuarios (nombre,password,carrera,expediente) VALUES (%s,%s,%s,%s)",
             (nombre, password, carrera, expediente)
         )
-        conn.commit()
-        conn.close()
+        db.commit()
+        cursor.close()
 
         flash(f"✅ Registro exitoso. Tu expediente es {expediente}", "success")
         return redirect("/login")
@@ -246,13 +153,15 @@ def encuesta():
 
     if request.method == "POST":
         respuesta = request.form["respuesta"]
-        conn = get_db_connection()
-        conn.execute(
-            "INSERT INTO encuesta_salud (expediente,respuesta) VALUES (?,?)",
+
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO encuesta_salud (expediente,respuesta) VALUES (%s,%s)",
             (session["expediente"], respuesta)
         )
-        conn.commit()
-        conn.close()
+        db.commit()
+        cursor.close()
+
         return redirect("/examen")
 
     return render_template("encuesta.html", usuario=session["usuario"])
@@ -271,38 +180,21 @@ def examen():
 
         nombre_pdf = generar_pdf_examen(formulario, session["expediente"])
 
-        ruta_pdf = os.path.join(PDF_FOLDER, nombre_pdf)
-        enviar_pdf_por_correo(ruta_pdf, nombre_pdf)
-
-
-        ruta_pdf = os.path.join(PDF_FOLDER, nombre_pdf)
-        enviar_pdf_async(ruta_pdf, nombre_pdf)
-
-
-        
-
-
-        conn = get_db_connection()
-        conn.execute(
-            "INSERT INTO examenes (expediente, documento) VALUES (?,?)",
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO examenes (expediente, documento) VALUES (%s,%s)",
             (session["expediente"], nombre_pdf)
         )
-        conn.commit()
-        conn.close()
+        db.commit()
+        cursor.close()
 
-        # PDF solo para administrador
-        return f"✅ Examen enviado y PDF generado correctamente."
+        return "✅ Examen enviado y PDF generado correctamente"
 
-    return render_template("examen.html", usuario=session["usuario"], expediente=session["expediente"])
-
-# ------------------- DESCARGAR PDF (solo admin) -------------------
-
-@app.route("/descargar/<nombre_pdf>")
-def descargar_pdf(nombre_pdf):
-    # Aquí puedes poner un control de administrador, por ejemplo:
-    # if 'admin' not in session:
-    #     return "No autorizado", 403
-    return send_from_directory(PDF_FOLDER, nombre_pdf, as_attachment=True)
+    return render_template(
+        "examen.html",
+        usuario=session["usuario"],
+        expediente=session["expediente"]
+    )
 
 # ------------------- LOGOUT -------------------
 
@@ -314,4 +206,4 @@ def logout():
 # ------------------- RUN -------------------
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(debug=True)
