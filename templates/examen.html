@@ -124,6 +124,7 @@ button:hover {
     <p>
       Se hace de su conocimiento a los alumnos de nuevo ingreso, que el presente examen es de carácter oficial y estrictamente confidencial, por lo que la información recabada, compuesta por datos personales se mantendrá archivada por Servicio Médico para salvaguardar la integridad, el patrimonio, la seguridad y la salud de todos los aspirantes.
     </p>
+      
         <!-- Mensajes flash -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -392,9 +393,9 @@ button:hover {
 
       <p style="margin-top:20px; text-align:center; font-weight:bold">A T E N T A M E N T E <br> SERVICIO MÉDICO</p>
         <!-- Imagen al final del formulario -->
-<div style="text-align:center; margin-top:25px;"> 
-  <img src="ANNY.jpg" 
+         <img src="{{ url_for('static', filename='ANNY.jpg') }}" 
      style="width:80px; height:auto; border-radius:10px;">
+
 
 </div>
 
