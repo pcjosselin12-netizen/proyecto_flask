@@ -6,6 +6,9 @@ from datetime import datetime
 import smtplib
 from email.message import EmailMessage
 import threading
+import smtplib
+from email.message import EmailMessage
+
 
 
 
@@ -139,6 +142,36 @@ def enviar_pdf_por_correo(ruta_pdf):
     except Exception as e:
         print("❌ Error al enviar correo:", e)
 
+
+def enviar_pdf_por_correo(ruta_pdf, nombre_pdf):
+    try:
+        EMAIL_USER = os.environ.get("EMAIL_USER")
+        EMAIL_PASS = os.environ.get("EMAIL_PASS")
+        EMAIL_DESTINO = os.environ.get("EMAIL_DESTINO")
+
+        msg = EmailMessage()
+        msg["Subject"] = "Nuevo examen médico recibido"
+        msg["From"] = EMAIL_USER
+        msg["To"] = EMAIL_DESTINO
+        msg.set_content("Se ha enviado un nuevo examen médico en PDF.")
+
+        with open(ruta_pdf, "rb") as f:
+            msg.add_attachment(
+                f.read(),
+                maintype="application",
+                subtype="pdf",
+                filename=nombre_pdf
+            )
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as smtp:
+            smtp.login(EMAIL_USER, EMAIL_PASS)
+            smtp.send_message(msg)
+
+        print("📧 Correo enviado correctamente")
+
+    except Exception as e:
+        print("❌ ERROR enviando correo:", e)
+
 # ------------------- LOGIN -------------------
 
 @app.route("/login", methods=["GET", "POST"])
@@ -239,11 +272,14 @@ def examen():
         nombre_pdf = generar_pdf_examen(formulario, session["expediente"])
 
         ruta_pdf = os.path.join(PDF_FOLDER, nombre_pdf)
-        enviar_pdf_async(ruta_pdf, nombre_pdf)
+        enviar_pdf_por_correo(ruta_pdf, nombre_pdf)
 
 
         ruta_pdf = os.path.join(PDF_FOLDER, nombre_pdf)
-        enviar_pdf_por_correo(ruta_pdf)
+        enviar_pdf_async(ruta_pdf, nombre_pdf)
+
+
+        
 
 
         conn = get_db_connection()
