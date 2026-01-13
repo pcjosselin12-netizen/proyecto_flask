@@ -5,6 +5,8 @@ from fpdf import FPDF
 from datetime import datetime
 import smtplib
 from email.message import EmailMessage
+import threading
+
 
 
 # ------------------- APP -------------------
@@ -68,6 +70,44 @@ def generar_pdf_examen(formulario, expediente):
 
     pdf.output(ruta)
     return nombre_pdf
+def enviar_pdf_async(ruta_pdf, nombre_pdf):
+    def enviar():
+        try:
+            import smtplib
+            from email.message import EmailMessage
+
+            EMAIL_USER = os.environ.get("EMAIL_USER")
+            EMAIL_PASS = os.environ.get("EMAIL_PASS")
+
+            if not EMAIL_USER or not EMAIL_PASS:
+                print("❌ Variables de entorno de correo no configuradas")
+                return
+
+            msg = EmailMessage()
+            msg["Subject"] = "Nuevo examen médico recibido"
+            msg["From"] = EMAIL_USER
+            msg["To"] = EMAIL_USER
+            msg.set_content("Se adjunta el examen médico en PDF.")
+
+            with open(ruta_pdf, "rb") as f:
+                msg.add_attachment(
+                    f.read(),
+                    maintype="application",
+                    subtype="pdf",
+                    filename=nombre_pdf
+                )
+
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+                smtp.login(EMAIL_USER, EMAIL_PASS)
+                smtp.send_message(msg)
+
+            print("✅ Correo enviado correctamente")
+
+        except Exception as e:
+            print("❌ Error enviando correo:", e)
+
+    threading.Thread(target=enviar).start()
+
 
 def enviar_pdf_por_correo(ruta_pdf):
     email_user = os.environ.get("EMAIL_USER")
@@ -197,6 +237,10 @@ def examen():
         formulario["fecha"] = datetime.now().strftime("%d/%m/%Y %H:%M")
 
         nombre_pdf = generar_pdf_examen(formulario, session["expediente"])
+
+        ruta_pdf = os.path.join(PDF_FOLDER, nombre_pdf)
+        enviar_pdf_async(ruta_pdf, nombre_pdf)
+
 
         ruta_pdf = os.path.join(PDF_FOLDER, nombre_pdf)
         enviar_pdf_por_correo(ruta_pdf)
