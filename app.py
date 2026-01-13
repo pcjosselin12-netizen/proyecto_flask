@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, session, flash
-import mysql.connector
+import sqlite3
 import os
 from fpdf import FPDF
 from datetime import datetime
@@ -15,14 +15,40 @@ PDF_FOLDER = 'examenes'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(PDF_FOLDER, exist_ok=True)
 
-# ------------------- BD -------------------
+# ------------------- BD SQLITE -------------------
 
-db = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="",
-    database="serviciomed"
+db = sqlite3.connect("serviciomed.db", check_same_thread=False)
+db.row_factory = sqlite3.Row
+
+cursor = db.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS usuarios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT,
+    password TEXT,
+    carrera TEXT,
+    expediente TEXT
 )
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS encuesta_salud (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    expediente TEXT,
+    respuesta TEXT
+)
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS examenes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    expediente TEXT,
+    documento TEXT
+)
+""")
+
+db.commit()
 
 # ------------------- PREFIJOS -------------------
 
@@ -46,7 +72,6 @@ def generar_pdf_examen(formulario, expediente):
 
     ancho_util = pdf.w - pdf.l_margin - pdf.r_margin
 
-    # Título
     pdf.set_font("Helvetica", "B", 13)
     pdf.cell(0, 8, "EXAMEN MEDICO 2025-2", ln=True, align="C")
     pdf.ln(4)
@@ -56,20 +81,17 @@ def generar_pdf_examen(formulario, expediente):
     for campo, valor in formulario.items():
         campo = campo.replace("_", " ").capitalize()
         texto = str(valor).replace("\n", " ").replace("\r", " ")
-
-        # Campo + valor juntos
         linea = f"{campo}: {texto}"
 
         pdf.multi_cell(ancho_util, 5, linea)
-        pdf.ln(1)  # espacio mínimo entre campos
+        pdf.ln(1)
 
     fecha = datetime.now().strftime("%Y%m%d_%H%M%S")
     nombre_pdf = f"examen_{expediente}_{fecha}.pdf"
-    ruta = os.path.join("examenes", nombre_pdf)
+    ruta = os.path.join(PDF_FOLDER, nombre_pdf)
 
     pdf.output(ruta)
     return nombre_pdf
-
 
 # ------------------- LOGIN -------------------
 
@@ -79,13 +101,12 @@ def login():
         nombre = request.form["nombre"]
         password = request.form["password"]
 
-        cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
         cursor.execute(
-            "SELECT * FROM usuarios WHERE nombre=%s AND password=%s",
+            "SELECT * FROM usuarios WHERE nombre=? AND password=?",
             (nombre, password)
         )
         usuario = cursor.fetchone()
-        cursor.close()
 
         if usuario:
             session["usuario"] = usuario["nombre"]
@@ -105,13 +126,12 @@ def registro():
         password = request.form["password"]
         carrera = request.form["carrera"]
 
-        cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
         cursor.execute(
-            "SELECT * FROM usuarios WHERE nombre=%s AND carrera=%s",
+            "SELECT * FROM usuarios WHERE nombre=? AND carrera=?",
             (nombre, carrera)
         )
         existe = cursor.fetchone()
-        cursor.close()
 
         if existe:
             flash("⚠️ Usuario ya registrado", "warning")
@@ -119,24 +139,20 @@ def registro():
 
         prefijo = PREFIJOS.get(carrera, "XXX")
 
-        cursor = db.cursor(dictionary=True)
         cursor.execute(
-            "SELECT expediente FROM usuarios WHERE carrera=%s ORDER BY expediente DESC LIMIT 1",
+            "SELECT expediente FROM usuarios WHERE carrera=? ORDER BY expediente DESC LIMIT 1",
             (carrera,)
         )
         row = cursor.fetchone()
-        cursor.close()
 
         ultimo = int(row["expediente"][len(prefijo):]) if row else 0
         expediente = f"{prefijo}{str(ultimo + 1).zfill(2)}"
 
-        cursor = db.cursor()
         cursor.execute(
-            "INSERT INTO usuarios (nombre,password,carrera,expediente) VALUES (%s,%s,%s,%s)",
+            "INSERT INTO usuarios (nombre,password,carrera,expediente) VALUES (?,?,?,?)",
             (nombre, password, carrera, expediente)
         )
         db.commit()
-        cursor.close()
 
         flash(f"✅ Registro exitoso. Tu expediente es {expediente}", "success")
         return redirect("/login")
@@ -155,11 +171,10 @@ def encuesta():
 
         cursor = db.cursor()
         cursor.execute(
-            "INSERT INTO encuesta_salud (expediente,respuesta) VALUES (%s,%s)",
+            "INSERT INTO encuesta_salud (expediente,respuesta) VALUES (?,?)",
             (session["expediente"], respuesta)
         )
         db.commit()
-        cursor.close()
 
         return redirect("/examen")
 
@@ -181,11 +196,10 @@ def examen():
 
         cursor = db.cursor()
         cursor.execute(
-            "INSERT INTO examenes (expediente, documento) VALUES (%s,%s)",
+            "INSERT INTO examenes (expediente, documento) VALUES (?,?)",
             (session["expediente"], nombre_pdf)
         )
         db.commit()
-        cursor.close()
 
         return "✅ Examen enviado y PDF generado correctamente"
 
