@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Examen Médico 2025-2</title>
+  <style>
+    
+body {
+  font-family: 'Segoe UI', Tahoma, Verdana, sans-serif;
+  background: linear-gradient(135deg, #e0f7fa, #d1c4e9);
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.container {
+  background: #fff;
+  width: 95%;
+  max-width: 680px; /* 🔽 más estrecho que antes */
+  padding: 28px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  overflow-y: auto;
+  max-height: 95vh;
+}
+
+h1, h2 {
+  text-align: center;
+  margin: 0;
+}
+
+h2 {
+  color: #0f0f0f;
+  margin-bottom: 20px;
+  font-weight: normal;
+  font-size: 16px;
+}
+
+p, label, input, select, textarea, td {
+  font-size: 14px;
+  font-family: inherit;
+  color: #070707;
+}
+
+label {
+  display: block;
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 6px 10px;
+  margin-top: 4px;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.inline {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.checkbox-group label,
+.inline label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: normal;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+table td {
+  padding:10px;
+}
+button {
+  margin-top: 20px;
+  padding: 10px;
+  background: #0066cc;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+button:hover {
+  background: #004c99;
+}
+.titulo-verde {
+  background: linear-gradient(to right, #a8c5e6, #dcedc1); 
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 22px;
+  color: #363a3a;
+  text-align: center;
+}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="titulo-verde">Examen Médico 2025-2</h1>
+
+    <h2>- Examen Diagnóstico para alumnos de nuevo ingreso -</h2>
+
+    <p>
+      Se hace de su conocimiento a los alumnos de nuevo ingreso, que el presente examen es de carácter oficial y estrictamente confidencial, por lo que la información recabada, compuesta por datos personales se mantendrá archivada por Servicio Médico para salvaguardar la integridad, el patrimonio, la seguridad y la salud de todos los aspirantes.
+    </p>
+        <!-- Mensajes flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="flash {{ category }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Información del alumno -->
+    <p><strong>Nombre de Usuario:</strong> {{ usuario }}</p>
+    <p><strong>Número de expediente:</strong> {{ expediente }}</p>
+
+    <form method="POST">
+
+      <label>Nombre completo (empezando por apellido). *</label>
+      <input type="text" name="nombre" required>
+
+      <label>Edad en años cumplidos (sólo número): *</label>
+      <input type="number" name="edad" required>
+
+      <label>Estado civil: *</label>
+      <select name="estado_civil" required>
+        <option value="">Seleccione</option>
+        <option>Soltero (a)</option>
+        <option>Casado (a)</option>
+        <option>Unión libre</option>
+        <option>Viudo (a)</option>
+        <option>Divorciado (a)</option>
+        <option>Separado (a)</option>
+        <option>Madre soltera</option>
+        <option>Padre soltero</option>
+      </select>
+
+      <label>Lugar de nacimiento (lugar de origen). *</label>
+      <input type="text" name="lugar_nacimiento" required>
+
+      <label>Escribe tu domicilio completo. (empezando por: calle, número exterior, colonia, delegación o municipio y código postal). *</label>
+      <textarea name="domicilio" required></textarea>
+
+      <label>Escribe el número telefónico de tu domicilio. (en caso de no tener algún número telefónico escribe NO) *</label>
+      <input type="text" name="telefono_domicilio" required>
+
+      <label>Escribe el número telefónico de un familiar. *</label>
+      <input type="text" name="telefono_familiar" required>
+
+      <label>Escribe el número telefónico de tu papá. *</label>
+      <input type="text" name="telefono_papa" required>
+
+      <label>Escribe el número telefónico de tu mamá. *</label>
+      <input type="text" name="telefono_mama" required>
+
+      <label>Ocupación: *</label>
+      <select name="ocupacion" required>
+        <option value="">Seleccione</option>
+        <option>Nada más estudio</option>
+        <option>Estudio y trabajo</option>
+      </select>
+
+      <label>¿Qué religión tienes? , en caso de no tener escribe "NO" *</label>
+      <input type="text" name="religion" required>
+
+      <label>Escolaridad: *</label>
+      <select name="escolaridad" required>
+        <option value="">Seleccione</option>
+        <option>Bachillerato</option>
+        <option>Examen único del SENEVAL (del bachillerato)</option>
+        <option>Sistema abierto (del bachillerato)</option>
+      </select>
+
+      <label>¿Tienes carrera técnica? *</label>
+      <select name="carrera_tecnica" required>
+        <option value="">Seleccione</option>
+        <option>Si</option>
+        <option>No</option>
+      </select>
+
+      <label>¿Cuál?</label>
+      <input type="text" name="carrera_tecnica_cual">
+
+      <label>Escuela de procedencia: *</label>
+      <input type="text" name="escuela_procedencia" required>
+
+      <label>Escribe tu promedio general del bachillerato: *</label>
+      <input type="text" name="promedio_bachillerato" required>
+
+      <label>¿Cuál es la carrera que seleccionaste? *</label>
+      <select name="carrera" required>
+        <option value="">Seleccione</option>
+        <option>Lic. Gastronomía</option>
+        <option>Lic. Administración</option>
+        <option>Ing. Mecatrónica</option>
+        <option>Ing. Química</option>
+        <option>Ing. Industrial</option>
+        <option>Ing. Animación Digital y Efectos Visuales.</option>
+        <option>Ing. Sistemas Computacionales</option>
+      </select>
+
+      <label>¿Cuál es tu peso?: *</label>
+      <input type="text" name="peso" required>
+
+      <label>¿Cuánto mides?: *</label>
+      <input type="text" name="estatura" required>
+
+     <label>Selecciona las enfermedades que has padecido (puede ser más de una): *</label>
+    <div class="checkbox-group">
+      <label><input type="checkbox" name="enfermedades" value="Exantemáticas"> Exantemáticas (sarampión, rubeola, varicela, escarlatina, roséola y paperas)</label>
+      <label><input type="checkbox" name="enfermedades" value="Psiquiátricas"> Psiquiátricas (esquizofrenia, bipolaridad, depresión, bulimia, anorexia, etc.)</label>
+      <label><input type="checkbox" name="enfermedades" value="Deformaciones de nacimiento"> Deformaciones de nacimiento</label>
+      <label><input type="checkbox" name="enfermedades" value="Transfusionales"> Transfusionales (te han puesto sangre)</label>
+      <label><input type="checkbox" name="enfermedades" value="Traumatológicos"> Traumatológicos (fracturas)</label>
+      <label><input type="checkbox" name="enfermedades" value="Alérgicos"> Alérgicos (alimentos, medicamentos, al sol, tierra, frío, pelos de animales, etc.)</label>
+      <label><input type="checkbox" name="enfermedades" value="Hemorragias"> Hemorragias (nariz, boca ó genitales)</label>
+      <label><input type="checkbox" name="enfermedades" value="Enfermedades de la piel"> Enfermedades de la piel</label>
+      <label><input type="checkbox" name="enfermedades" value="Epilepsia"> Epilepsia</label>
+      <label><input type="checkbox" name="enfermedades" value="Crisis convulsivas"> Crisis convulsivas ó crisis de ausencia</label>
+      <label><input type="checkbox" name="enfermedades" value="Fiebre reumática"> Fiebre reumática</label>
+      <label><input type="checkbox" name="enfermedades" value="Cáncer"> Cáncer</label>
+      <label><input type="checkbox" name="enfermedades" value="Tuberculosis"> Tuberculosis</label>
+      <label><input type="checkbox" name="enfermedades" value="Problemas del riñón"> Problemas del riñón (insuficiencia renal, piedras en el riñón, infecciones frecuentes de vías urinarias)</label>
+      <label><input type="checkbox" name="enfermedades" value="Hepatitis"> Hepatitis</label>
+      <label><input type="checkbox" name="enfermedades" value="Diabetes"> Diabetes</label>
+      <label><input type="checkbox" name="enfermedades" value="Hipertensión"> Hipertensión</label>
+      <label><input type="checkbox" name="enfermedades" value="Obesidad"> Obesidad</label>
+      <label><input type="checkbox" name="enfermedades" value="Alucinaciones"> Alucinaciones (auditivas y visuales)</label>
+      <label><input type="checkbox" name="enfermedades" value="Tumores"> Tumores</label>
+      <label><input type="checkbox" name="enfermedades" value="Asma"> Asma</label>
+      <label><input type="checkbox" name="enfermedades" value="Ninguna"> Ninguna de las anteriores</label>
+    </div>
+
+
+  <label>Alguno de tus padres ó hermanos tiene antecedentes de:</label>
+  <table class="tabla-form">
+    <tr>
+      <td></td>
+      <td>Tabaquismo</td>
+      <td>Alcoholismo</td>
+      <td>Adicciones</td>
+    </tr>
+    <tr>
+      <td>Padre</td>
+      <td><input type="checkbox" name="padre_tabaquismo"></td>
+      <td><input type="checkbox" name="padre_alcoholismo"></td>
+      <td><input type="checkbox" name="padre_adicciones"></td>
+    </tr>
+    <tr>
+      <td>Madre</td>
+      <td><input type="checkbox" name="madre_tabaquismo"></td>
+      <td><input type="checkbox" name="madre_alcoholismo"></td>
+      <td><input type="checkbox" name="madre_adicciones"></td>
+    </tr>
+    <tr>
+      <td>Hermanos</td>
+      <td><input type="checkbox" name="hermanos_tabaquismo"></td>
+      <td><input type="checkbox" name="hermanos_alcoholismo"></td>
+      <td><input type="checkbox" name="hermanos_adicciones"></td>
+    </tr>
+  </table>
+
+
+      <label>¿Qué grupo de sangre tienes?: *</label>
+      <select name="grupo_sanguineo" required>
+        <option value="">Seleccione</option>
+        <option>O</option>
+        <option>A</option>
+        <option>B</option>
+        <option>AB</option>
+      </select>
+
+      <label>¿Qué tipo de RH tienes en la sangre?: *</label>
+      <select name="rh" required>
+        <option value="">Seleccione</option>
+        <option>Positivo</option>
+        <option>Negativo</option>
+      </select>
+
+      <label>¿Tienes alguna enfermedad de los oídos?: *</label>
+      <div class="inline">
+        <label><input type="radio" name="enf_oidos" value="Si" required> Si</label>
+        <label><input type="radio" name="enf_oidos" value="No" required> No</label>
+      </div>
+
+      <label>Si contestaste Sí en la pregunta anterior, especifica que tipo de enfermedad y si es en el oído derecho, izquierdo o ambos.</label>
+      <input type="text" name="enf_oidos_detalle">
+
+      <label>¿Utilizas aparato auditivo?: *</label>
+      <div class="inline">
+        <label><input type="radio" name="aparato_auditivo" value="Si" required> Si</label>
+        <label><input type="radio" name="aparato_auditivo" value="No" required> No</label>
+      </div>
+
+      <label>¿Tienes alguna enfermedad de los ojos?: *</label>
+      <div class="inline">
+        <label><input type="radio" name="enf_ojos" value="Si" required> Sí</label>
+        <label><input type="radio" name="enf_ojos" value="No" required> No</label>
+      </div>
+
+      <label>Si contestaste Sí en la pregunta anterior, especifica que tipo de enfermedad y en que ojo, derecho izquierdo o ambos.</label>
+      <input type="text" name="enf_ojos_detalle">
+
+      <label>¿Utilizas lentes?: *</label>
+      <div class="inline">
+        <label><input type="radio" name="lentes" value="Si" required> Si</label>
+        <label><input type="radio" name="lentes" value="No" required> No</label>
+      </div>
+
+      <label>¿Tienes alguna discapacidad?: *</label>
+      <div class="inline">
+        <label><input type="radio" name="discapacidad" value="Si" required> Si</label>
+        <label><input type="radio" name="discapacidad" value="No" required> No</label>
+      </div>
+
+      <label>Escriba que tipo de discapacidad</label>
+      <input type="text" name="discapacidad_detalle">
+ 
+  
+      <label>¿Alguna vez has consumido?: *</label>
+      <div class="checkbox-group">
+        <label><input type="checkbox" name="consumo" value="Alcohol"> Alcohol</label>
+        <label><input type="checkbox" name="consumo" value="Tabaco"> Tabaco</label>
+        <label><input type="checkbox" name="consumo" value="Alguna droga"> Alguna droga</label>
+        <label><input type="checkbox" name="consumo" value="Ninguna"> Ninguna</label>
+      </div>
+
+
+      <label>¿Padeces en este momento de alguna enfermedad?: *</label>
+      <div class="inline">
+        <label><input type="radio" name="enfermedad_actual" value="Si" required> Si</label>
+        <label><input type="radio" name="enfermedad_actual" value="No" required> No</label>
+      </div>
+
+      <label>Si contestaste Sí en la pregunta anterior, menciona de que tipo:</label>
+      <input type="text" name="enfermedad_actual_detalle">
+
+      <label>¿Te han operado alguna vez?: *</label>
+      <div class="inline">
+        <label><input type="radio" name="operado" value="Si" required> Si</label>
+        <label><input type="radio" name="operado" value="No" required> No</label>
+      </div>
+
+      <label>Si contestaste Sí en la pregunta anterior, especifica de que te han operado:</label>
+      <input type="text" name="operado_detalle">
+
+      <label>¿En este momento tienes un tratamiento médico?: *</label>
+      <div class="inline">
+        <label><input type="radio" name="tratamiento" value="Si" required> Si</label>
+        <label><input type="radio" name="tratamiento" value="No" required> No</label>
+      </div>
+
+      <label>Si contestaste Sí en la pregunta anterior, especifica qué tipo de tratamiento:</label>
+      <input type="text" name="tratamiento_detalle">
+
+      <label>¿Cuentas con todas tus vacunas?: *</label>
+      <div class="inline">
+        <label><input type="radio" name="vacunas" value="Si" required> Si</label>
+        <label><input type="radio" name="vacunas" value="No" required> No</label>
+      </div>
+
+      <label>¿Practicas algún deporte ó actividad artística? (danza, música, pintura, dibujo. etc.) *</label>
+      <div class="inline">
+        <label><input type="radio" name="deporte" value="Si" required> Si</label>
+        <label><input type="radio" name="deporte" value="No" required> No</label>
+      </div>
+
+      <label>Si contestaste Sí en la pregunta anterior especifica que actividad practicas:</label>
+      <input type="text" name="deporte_detalle">
+
+      <p style="margin-top:20px; text-align:center; font-weight:bold">A T E N T A M E N T E <br> SERVICIO MÉDICO</p>
+        <!-- Imagen al final del formulario -->
+<div style="text-align:center; margin-top:25px;"> 
+  <img src="ANNY.jpg" 
+     style="width:80px; height:auto; border-radius:10px;">
+
+</div>
+
+      <button type="submit">Enviar Examen</button>
+      
+
+    </form>
+ 
+
+
+  </div>
+</body>
+</html>

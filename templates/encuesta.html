@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Bienvenido</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #e6f2ff; /* azul clarito */
+            margin: 0; 
+            height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        .card {
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            background: #f9f9f9;
+            text-align: center;
+            max-width: 500px;
+        }
+        h1 { color: #2c3e50; margin-bottom: 15px; }
+        h2 { color: #34495e; margin-top: 25px; }
+        p { font-size: 18px; margin: 8px 0; }
+        .expediente { font-weight: bold; color: #e74c3c; font-size: 22px; }
+        a { 
+            text-decoration: none; 
+            color: white; 
+            background: #3498db; 
+            padding: 10px 20px; 
+            border-radius: 8px; 
+            display: inline-block; 
+            margin-top: 15px;
+        }
+        a:hover { background: #2980b9; }
+        form { margin-top: 20px; text-align: left; }
+        label { font-weight: bold; }
+        input[type="radio"] { margin-right: 6px; }
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <!-- Bienvenida -->
+        <h1>¡Bienvenido, {{ usuario }}! 🎉</h1>
+        <!-- Encuesta -->
+        <h2>Antes de continuar con tu examen médico:</h2>
+        
+        <form method="POST" action="/encuesta">
+
+            <label>¿Estuviste en la plática de salud que impartió la doctora?</label><br><br>
+            <input type="radio" name="respuesta" value="Si" required> Sí<br>
+            <input type="radio" name="respuesta" value="No" required> No<br><br>
+            <button type="submit">Enviar</button>
+        </form>
+    </div>
+</body>
+</html>

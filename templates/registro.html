@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Registro</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #cf74eb, #98e2b7);
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0px 4px 15px rgba(0,0,0,0.2);
+      width: 350px;
+      text-align: center;
+    }
+    h2 { margin-bottom: 20px; color: #333; }
+    label { display: block; margin-top: 15px; font-weight: bold; text-align: left; }
+    input, select {
+      width: 100%; padding: 10px; margin-top: 5px;
+      border-radius: 8px; border: 1px solid #ccc; font-size: 14px;
+    }
+    button {
+      margin-top: 20px; width: 100%; padding: 12px;
+      border: none; border-radius: 8px;
+      background-color: #4CAF50; color: white;
+      font-size: 16px; cursor: pointer;
+    }
+    button:hover { background-color: #45a049; }
+    .toggle-link { margin-top: 10px; display: block; color: #0066cc; cursor: pointer; }
+    .flash {
+  margin-bottom: 15px;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.flash.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.flash.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, msg in messages %}
+      <div class="flash {{ category }}">{{ msg }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+    <h2>Registro</h2>
+    <form method="POST" action="/">
+      <label>Nombre:</label>
+      <input type="text" name="nombre" required>
+
+      <label>Contraseña:</label>
+      <input type="password" name="password" required>
+
+      <label>Carrera:</label>
+      <select name="carrera" required>
+        <option value="">Seleccione</option>
+        <option>Ingeniería en Animación Digital y Efectos Visuales</option>
+        <option>Ingeniería en Sistemas Computacionales</option>
+        <option>Ingeniería Industrial</option>
+        <option>Ingeniería en Mecatrónica</option>
+        <option>Ingeniería Química</option>
+        <option>Licenciatura en Gastronomía</option>
+        <option>Licenciatura en Administración</option>
+      </select>
+
+      <button type="submit">Registrarse</button>
+    </form>
+    <a href="/login" class="toggle-link">¿Ya tienes cuenta? Inicia sesión aquí</a>
+  </div>
+</body>
+</html>

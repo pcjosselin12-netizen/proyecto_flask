@@ -1,0 +1,26 @@
+<h2>Buscar expediente</h2>
+<form method="POST">
+  <label>Número de expediente:</label>
+  <input type="text" name="expediente" required>
+  <button type="submit">Buscar</button>
+</form>
+
+{% if datos %}
+  <h3>Información del Alumno</h3>
+  <p>Nombre: {{ datos.usuario.nombre }}</p>
+  <p>Carrera: {{ datos.usuario.carrera }}</p>
+  <p>Expediente: {{ datos.usuario.expediente }}</p>
+
+  <h3>Encuesta de Salud</h3>
+  {% for r in datos.encuesta %}
+    <p>{{ r.respuesta }}</p>
+  {% endfor %}
+
+  <h3>Examen Médico</h3>
+  {% for e in datos.examen %}
+    <p>Nombre: {{ e.nombre }}, Edad: {{ e.edad }}, Carrera: {{ e.carrera }}</p>
+    {% if e.documento %}
+      <p>Documento: {{ e.documento }}</p>
+    {% endif %}
+  {% endfor %}
+{% endif %}

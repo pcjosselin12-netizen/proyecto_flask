@@ -1,0 +1,38 @@
+# CODIGO BUENO
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Resultados Encuesta</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+  <h2>Resultados de la Encuesta</h2>
+  <div id="graficaEncuesta" style="width:500px;height:300px;"></div>
+
+  <script>
+    (function () {
+      // Flask insertará aquí números, ejemplo: 5, 3
+      const siCount = Number({{ si|default(0)|tojson }});
+      const noCount = Number({{ no|default(0)|tojson }});
+
+      const subjects = ['Sí', 'No'];
+      const grades = [siCount, noCount];
+
+      Plotly.newPlot(
+        'graficaEncuesta',
+        [{
+          x: subjects,
+          y: grades,
+          type: 'bar'
+        }],
+        {
+          title: 'Resultados de la Encuesta',
+          xaxis: { title: 'Respuestas' },
+          yaxis: { title: 'Cantidad', dtick: 1 }
+        }
+      );
+    })();
+  </script>
+</body>
+</html>
