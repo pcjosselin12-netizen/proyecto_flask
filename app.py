@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, flash
+from flask import Flask, render_template, request, redirect, session, flash, send_from_directory
 import sqlite3
 import os
 from fpdf import FPDF
@@ -15,40 +15,14 @@ PDF_FOLDER = 'examenes'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(PDF_FOLDER, exist_ok=True)
 
-# ------------------- BD SQLITE -------------------
+# ------------------- BD -------------------
 
-db = sqlite3.connect("serviciomed.db", check_same_thread=False)
-db.row_factory = sqlite3.Row
+DB_FILE = "serviciomed.db"
 
-cursor = db.cursor()
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS usuarios (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nombre TEXT,
-    password TEXT,
-    carrera TEXT,
-    expediente TEXT
-)
-""")
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS encuesta_salud (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    expediente TEXT,
-    respuesta TEXT
-)
-""")
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS examenes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    expediente TEXT,
-    documento TEXT
-)
-""")
-
-db.commit()
+def get_db_connection():
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 # ------------------- PREFIJOS -------------------
 
@@ -72,17 +46,16 @@ def generar_pdf_examen(formulario, expediente):
 
     ancho_util = pdf.w - pdf.l_margin - pdf.r_margin
 
+    # Título
     pdf.set_font("Helvetica", "B", 13)
     pdf.cell(0, 8, "EXAMEN MEDICO 2025-2", ln=True, align="C")
     pdf.ln(4)
 
     pdf.set_font("Helvetica", size=9)
-
     for campo, valor in formulario.items():
         campo = campo.replace("_", " ").capitalize()
         texto = str(valor).replace("\n", " ").replace("\r", " ")
         linea = f"{campo}: {texto}"
-
         pdf.multi_cell(ancho_util, 5, linea)
         pdf.ln(1)
 
@@ -101,12 +74,12 @@ def login():
         nombre = request.form["nombre"]
         password = request.form["password"]
 
-        cursor = db.cursor()
-        cursor.execute(
+        conn = get_db_connection()
+        usuario = conn.execute(
             "SELECT * FROM usuarios WHERE nombre=? AND password=?",
             (nombre, password)
-        )
-        usuario = cursor.fetchone()
+        ).fetchone()
+        conn.close()
 
         if usuario:
             session["usuario"] = usuario["nombre"]
@@ -126,33 +99,32 @@ def registro():
         password = request.form["password"]
         carrera = request.form["carrera"]
 
-        cursor = db.cursor()
-        cursor.execute(
+        conn = get_db_connection()
+        existe = conn.execute(
             "SELECT * FROM usuarios WHERE nombre=? AND carrera=?",
             (nombre, carrera)
-        )
-        existe = cursor.fetchone()
+        ).fetchone()
 
         if existe:
             flash("⚠️ Usuario ya registrado", "warning")
+            conn.close()
             return redirect("/login")
 
         prefijo = PREFIJOS.get(carrera, "XXX")
-
-        cursor.execute(
+        row = conn.execute(
             "SELECT expediente FROM usuarios WHERE carrera=? ORDER BY expediente DESC LIMIT 1",
             (carrera,)
-        )
-        row = cursor.fetchone()
+        ).fetchone()
 
         ultimo = int(row["expediente"][len(prefijo):]) if row else 0
         expediente = f"{prefijo}{str(ultimo + 1).zfill(2)}"
 
-        cursor.execute(
+        conn.execute(
             "INSERT INTO usuarios (nombre,password,carrera,expediente) VALUES (?,?,?,?)",
             (nombre, password, carrera, expediente)
         )
-        db.commit()
+        conn.commit()
+        conn.close()
 
         flash(f"✅ Registro exitoso. Tu expediente es {expediente}", "success")
         return redirect("/login")
@@ -168,14 +140,13 @@ def encuesta():
 
     if request.method == "POST":
         respuesta = request.form["respuesta"]
-
-        cursor = db.cursor()
-        cursor.execute(
+        conn = get_db_connection()
+        conn.execute(
             "INSERT INTO encuesta_salud (expediente,respuesta) VALUES (?,?)",
             (session["expediente"], respuesta)
         )
-        db.commit()
-
+        conn.commit()
+        conn.close()
         return redirect("/examen")
 
     return render_template("encuesta.html", usuario=session["usuario"])
@@ -194,20 +165,27 @@ def examen():
 
         nombre_pdf = generar_pdf_examen(formulario, session["expediente"])
 
-        cursor = db.cursor()
-        cursor.execute(
+        conn = get_db_connection()
+        conn.execute(
             "INSERT INTO examenes (expediente, documento) VALUES (?,?)",
             (session["expediente"], nombre_pdf)
         )
-        db.commit()
+        conn.commit()
+        conn.close()
 
-        return "✅ Examen enviado y PDF generado correctamente"
+        # PDF solo para administrador
+        return f"✅ Examen enviado y PDF generado correctamente."
 
-    return render_template(
-        "examen.html",
-        usuario=session["usuario"],
-        expediente=session["expediente"]
-    )
+    return render_template("examen.html", usuario=session["usuario"], expediente=session["expediente"])
+
+# ------------------- DESCARGAR PDF (solo admin) -------------------
+
+@app.route("/descargar/<nombre_pdf>")
+def descargar_pdf(nombre_pdf):
+    # Aquí puedes poner un control de administrador, por ejemplo:
+    # if 'admin' not in session:
+    #     return "No autorizado", 403
+    return send_from_directory(PDF_FOLDER, nombre_pdf, as_attachment=True)
 
 # ------------------- LOGOUT -------------------
 
@@ -218,7 +196,5 @@ def logout():
 
 # ------------------- RUN -------------------
 
-
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
