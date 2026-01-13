@@ -3,6 +3,9 @@ import sqlite3
 import os
 from fpdf import FPDF
 from datetime import datetime
+import smtplib
+from email.message import EmailMessage
+
 
 # ------------------- APP -------------------
 
@@ -65,6 +68,36 @@ def generar_pdf_examen(formulario, expediente):
 
     pdf.output(ruta)
     return nombre_pdf
+
+def enviar_pdf_por_correo(ruta_pdf):
+    email_user = os.environ.get("EMAIL_USER")
+    email_pass = os.environ.get("EMAIL_PASS")
+
+    if not email_user or not email_pass:
+        print("❌ Faltan variables de entorno EMAIL_USER o EMAIL_PASS")
+        return
+
+    msg = EmailMessage()
+    msg["Subject"] = "Nuevo examen médico recibido"
+    msg["From"] = email_user
+    msg["To"] = email_user
+    msg.set_content("Se ha enviado un nuevo examen médico en PDF.")
+
+    with open(ruta_pdf, "rb") as f:
+        msg.add_attachment(
+            f.read(),
+            maintype="application",
+            subtype="pdf",
+            filename=os.path.basename(ruta_pdf)
+        )
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(email_user, email_pass)
+            server.send_message(msg)
+        print("✅ Correo enviado correctamente")
+    except Exception as e:
+        print("❌ Error al enviar correo:", e)
 
 # ------------------- LOGIN -------------------
 
@@ -164,6 +197,10 @@ def examen():
         formulario["fecha"] = datetime.now().strftime("%d/%m/%Y %H:%M")
 
         nombre_pdf = generar_pdf_examen(formulario, session["expediente"])
+
+        ruta_pdf = os.path.join(PDF_FOLDER, nombre_pdf)
+        enviar_pdf_por_correo(ruta_pdf)
+
 
         conn = get_db_connection()
         conn.execute(
