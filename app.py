@@ -1,5 +1,6 @@
 # bienbuena
-from flask import Flask, render_template, request, redirect, session, flash
+from flask import Flask, render_template, request, redirect, session, flash, send_from_directory
+
 import sqlite3
 import os
 from fpdf import FPDF
@@ -174,9 +175,27 @@ def examen():
         conn.commit()
         conn.close()
 
-        return "✅ Examen enviado y PDF generado correctamente"
+        
+        return f"""
+        ✅ Examen enviado correctamente.<br><br>
+        <a href="/descargar/{nombre_pdf}">📄 Descargar mi PDF</a>
+        """
+
 
     return render_template("examen.html", usuario=session["usuario"], expediente=session["expediente"])
+# ------------------- DESCARGAR PDF -------------------
+
+@app.route("/descargar/<archivo>")
+def descargar_pdf(archivo):
+    if "usuario" not in session:
+        return redirect("/login")
+
+    return send_from_directory(
+        PDF_FOLDER,
+        archivo,
+        as_attachment=True
+    )
+
 
 # ------------------- LOGOUT -------------------
 
@@ -187,8 +206,6 @@ def logout():
 
 # ------------------- RUN -------------------
 
-
 if __name__ == "__main__":
-
     app.run()
 
