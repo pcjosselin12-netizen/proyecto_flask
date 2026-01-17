@@ -166,11 +166,12 @@ def examen():
         formulario["fecha"] = datetime.now().strftime("%d/%m/%Y %H:%M")
 
         nombre_pdf = generar_pdf_examen(formulario, session["expediente"])
+        fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         conn = get_db_connection()
         conn.execute(
-            "INSERT INTO examenes (expediente, documento) VALUES (?,?)",
-            (session["expediente"], nombre_pdf)
+            "INSERT INTO examenes (expediente, documento,fecha) VALUES (?,?,?)",
+            (session["expediente"], nombre_pdf,fecha)
         )
         conn.commit()
         conn.close()
@@ -182,7 +183,10 @@ def examen():
         """
 
 
-    return render_template("examen.html", usuario=session["usuario"], expediente=session["expediente"])
+    return render_template(
+        "examen.html", 
+        usuario=session["usuario"], 
+        expediente=session["expediente"])
 # ------------------- DESCARGAR PDF -------------------
 
 @app.route("/descargar/<archivo>")
