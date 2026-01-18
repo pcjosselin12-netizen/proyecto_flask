@@ -37,9 +37,7 @@
       color: #155724;
       border: 1px solid #c3e6cb;
     }
-    .section {
-      margin-bottom: 30px;
-    }
+    .section { margin-bottom: 30px; }
     .section h3 {
       color: #555;
       border-bottom: 2px solid #4CAF50;
@@ -56,18 +54,9 @@
       justify-content: space-between;
       align-items: center;
     }
-    .documento-info {
-      flex: 1;
-    }
-    .documento-nombre {
-      font-weight: bold;
-      color: #333;
-      margin-bottom: 5px;
-    }
-    .documento-fecha {
-      font-size: 12px;
-      color: #666;
-    }
+    .documento-info { flex: 1; }
+    .documento-nombre { font-weight: bold; color: #333; margin-bottom: 5px; }
+    .documento-fecha { font-size: 12px; color: #666; }
     .btn-descargar {
       background-color: #2196F3;
       color: white;
@@ -78,9 +67,7 @@
       font-size: 14px;
       cursor: pointer;
     }
-    .btn-descargar:hover {
-      background-color: #0b7dda;
-    }
+    .btn-descargar:hover { background-color: #0b7dda; }
     .btn-subir {
       background-color: #4CAF50;
       color: white;
@@ -92,9 +79,7 @@
       display: inline-block;
       margin-bottom: 20px;
     }
-    .btn-subir:hover {
-      background-color: #45a049;
-    }
+    .btn-subir:hover { background-color: #45a049; }
     .sin-documentos {
       text-align: center;
       color: #666;
@@ -112,9 +97,7 @@
       text-decoration: none;
       font-size: 14px;
     }
-    .links a:hover {
-      text-decoration: underline;
-    }
+    .links a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -134,35 +117,18 @@
 
     <div class="section">
       <h3>📄 PDFs Subidos</h3>
-      {% if documentos_subidos %}
-        {% for doc in documentos_subidos %}
+      {% if documentos %}
+        {% for doc in documentos %}
           <div class="documento-item">
             <div class="documento-info">
               <div class="documento-nombre">📄 {{ doc.nombre_original }}</div>
               <div class="documento-fecha">Subido: {{ doc.fecha }}</div>
             </div>
-            <a href="/descargar_subido/{{ doc.nombre_archivo }}" class="btn-descargar">⬇️ Descargar</a>
+            <a href="/descargar_privado/{{ doc.id }}" class="btn-descargar">⬇️ Descargar</a>
           </div>
         {% endfor %}
       {% else %}
         <div class="sin-documentos">No has subido ningún documento aún.</div>
-      {% endif %}
-    </div>
-
-    <div class="section">
-      <h3>📝 Exámenes Generados</h3>
-      {% if examenes_generados %}
-        {% for examen in examenes_generados %}
-          <div class="documento-item">
-            <div class="documento-info">
-              <div class="documento-nombre">📄 {{ examen.documento }}</div>
-              <div class="documento-fecha">Fecha: {{ examen.fecha }}</div>
-            </div>
-            <a href="/descargar/{{ examen.documento }}" class="btn-descargar">⬇️ Descargar</a>
-          </div>
-        {% endfor %}
-      {% else %}
-        <div class="sin-documentos">No has generado ningún examen aún.</div>
       {% endif %}
     </div>
 
