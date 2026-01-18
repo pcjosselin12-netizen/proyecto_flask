@@ -6,17 +6,25 @@ from fpdf import FPDF
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from supabase import create_client
+from dotenv import load_dotenv
 
-# ------------------- SUPABASE -------------------
-SUPABASE_URL = os.environ.get("SUPABASE_URL") or "https://ubaiixwrthqqnsuxpsbh.supabase.co"
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY") or "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViYWlpeHdydGhxcW5zdXhwc2JoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODc1MTk5NSwiZXhwIjoyMDg0MzI3OTk1fQ.cb9ttv0qEq1F7pC03_KuoCqMtkcd6HeQaAm0Qrjzho4"
+# ------------------- CARGAR VARIABLES DE ENTORNO -------------------
+load_dotenv()
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+SECRET_KEY = os.environ.get("SECRET_KEY", "1234")  # default
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise Exception("❌ Debes definir SUPABASE_URL y SUPABASE_KEY como variables de entorno")
+
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ------------------- APP -------------------
 app = Flask(__name__)
-app.secret_key = "1234"
+app.secret_key = SECRET_KEY
 
-PDF_FOLDER = 'examenes'
+PDF_FOLDER = 'temp_pdfs'
 os.makedirs(PDF_FOLDER, exist_ok=True)
 
 # ------------------- ENTORNO -------------------
@@ -25,7 +33,10 @@ IS_RENDER = os.environ.get("DATABASE_URL") is not None
 # ------------------- DB -------------------
 def get_db_connection():
     if IS_RENDER:
-        return psycopg2.connect(os.environ.get("DATABASE_URL"), sslmode="require")
+        database_url = os.environ.get("DATABASE_URL")
+        if database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
+        return psycopg2.connect(database_url, sslmode="require")
     else:
         conn = sqlite3.connect("serviciomed.db")
         conn.row_factory = sqlite3.Row
@@ -59,22 +70,30 @@ PREFIJOS = {
     "Licenciatura en Administración": "LA"
 }
 
-# ------------------- PDF -------------------
+# ------------------- FUNCIONES PDF -------------------
+def clean_text(text):
+    if not text:
+        return ""
+    return ''.join(c if ord(c) < 128 else '?' for c in str(text))
+
 def generar_pdf_examen(formulario, expediente):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Helvetica", "B", 13)
+    pdf.set_font("Arial", "B", 13)
     pdf.cell(0, 8, "EXAMEN MEDICO 2025-2", ln=True, align="C")
     pdf.ln(5)
-    pdf.set_font("Helvetica", size=9)
+    pdf.set_font("Arial", size=9)
     for campo, valor in formulario.items():
-        pdf.multi_cell(0, 5, f"{campo}: {valor}")
+        pdf.multi_cell(180, 5, f"{campo}: {clean_text(valor)}")
     nombre_pdf = f"examen_{expediente}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-    pdf.output(os.path.join(PDF_FOLDER, nombre_pdf))
-    return nombre_pdf
+    ruta_local = os.path.join(PDF_FOLDER, nombre_pdf)
+    pdf.output(ruta_local)
+    return nombre_pdf, ruta_local
 
-# ------------------- LOGIN -------------------
-@app.route("/login", methods=["GET","POST"])
+# ------------------- RUTAS -------------------
+
+# LOGIN
+@app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         nombre = request.form["nombre"]
@@ -93,14 +112,15 @@ def login():
         flash("Usuario o contraseña incorrectos", "error")
     return render_template("login.html")
 
-# ------------------- REGISTRO -------------------
-@app.route("/", methods=["GET","POST"])
+# REGISTRO
+@app.route("/", methods=["GET", "POST"])
 def registro():
     if request.method == "POST":
         nombre = request.form["nombre"]
         password = request.form["password"]
         carrera = request.form["carrera"]
         prefijo = PREFIJOS.get(carrera, "XXX")
+
         ultimo = execute_query(
             "SELECT expediente FROM usuarios WHERE carrera=? ORDER BY expediente DESC LIMIT 1",
             "SELECT expediente FROM usuarios WHERE carrera=%s ORDER BY expediente DESC LIMIT 1",
@@ -109,17 +129,19 @@ def registro():
         )
         ultimo_num = int(ultimo[0][len(prefijo):]) if ultimo else 0
         expediente = f"{prefijo}{str(ultimo_num + 1).zfill(2)}"
+
         execute_query(
             "INSERT INTO usuarios (nombre,password,carrera,expediente) VALUES (?,?,?,?)",
             "INSERT INTO usuarios (nombre,password,carrera,expediente) VALUES (%s,%s,%s,%s)",
             (nombre, password, carrera, expediente)
         )
+
         flash(f"✅ Registro exitoso. Tu expediente es {expediente}", "success")
         return redirect("/login")
     return render_template("registro.html")
 
-# ------------------- ENCUESTA -------------------
-@app.route("/encuesta", methods=["GET","POST"])
+# ENCUESTA
+@app.route("/encuesta", methods=["GET", "POST"])
 def encuesta():
     if "usuario" not in session:
         return redirect("/login")
@@ -134,75 +156,88 @@ def encuesta():
         return redirect("/examen")
     return render_template("encuesta.html", usuario=session["usuario"], expediente=session["expediente"])
 
-# ------------------- EXAMEN -------------------
-@app.route("/examen", methods=["GET","POST"])
+# EXAMEN
+@app.route("/examen", methods=["GET", "POST"])
 def examen():
     if "usuario" not in session:
         return redirect("/login")
     if request.method == "POST":
-        nombre_pdf = generar_pdf_examen(request.form, session["expediente"])
+        nombre_pdf, ruta_local = generar_pdf_examen(request.form, session["expediente"])
+        ruta_supabase = f"{session['expediente']}/{nombre_pdf}"
+        try:
+            with open(ruta_local, "rb") as f:
+                supabase.storage.from_("documentos").upload(ruta_supabase, f.read(), {"content-type": "application/pdf"})
+            os.remove(ruta_local)
+        except Exception as e:
+            flash(f"❌ Error al subir el PDF a Supabase: {e}", "error")
+            return redirect("/examen")
         execute_query(
             "INSERT INTO examenes (expediente,documento,fecha) VALUES (?,?,?)",
             "INSERT INTO examenes (expediente,documento,fecha) VALUES (%s,%s,%s)",
-            (session["expediente"], nombre_pdf, datetime.now())
+            (session["expediente"], ruta_supabase, datetime.now())
         )
-        flash(f"✅ Examen generado correctamente: {nombre_pdf}", "success")
-        return redirect("/subir_pdf")
+        flash(f"✅ Examen generado y subido correctamente: {nombre_pdf}", "success")
+        return redirect("/mis_documentos")
     return render_template("examen.html", usuario=session["usuario"], expediente=session["expediente"])
 
-# ------------------- SUBIR PDF -------------------
-@app.route("/subir_pdf", methods=["GET","POST"])
+# SUBIR PDF
+@app.route("/subir_pdf", methods=["GET", "POST"])
 def subir_pdf():
     if "usuario" not in session:
         return redirect("/login")
     if request.method == "POST":
-        archivo = request.files["archivo"]
-        nombre_original = secure_filename(archivo.filename)
-        nombre_archivo = f"{session['expediente']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{nombre_original}"
-        ruta = f"{session['expediente']}/{nombre_archivo}"
-        supabase.storage.from_("documentos").upload(
-            ruta,
-            archivo.read(),
-            {"content-type": "application/pdf"}
-        )
+        archivo = request.files.get("archivo")
+        if not archivo or archivo.filename == "":
+            flash("❌ No se seleccionó ningún archivo", "error")
+            return redirect("/subir_pdf")
+
+        nombre_seguro = secure_filename(archivo.filename)
+        ruta_local = os.path.join(PDF_FOLDER, nombre_seguro)
+        archivo.save(ruta_local)
+
+        ruta_supabase = f"{session['expediente']}/{nombre_seguro}"
+        try:
+            with open(ruta_local, "rb") as f:
+                supabase.storage.from_("documentos").upload(ruta_supabase, f.read(), {"content-type": "application/pdf"})
+            os.remove(ruta_local)
+        except Exception as e:
+            flash(f"❌ Error al subir el PDF a Supabase: {e}", "error")
+            return redirect("/subir_pdf")
+
         execute_query(
-            "INSERT INTO documentos_subidos (expediente,nombre_original,nombre_archivo,ruta,fecha) VALUES (?,?,?,?,?)",
-            "INSERT INTO documentos_subidos (expediente,nombre_original,nombre_archivo,ruta,fecha) VALUES (%s,%s,%s,%s,%s)",
-            (session["expediente"], nombre_original, nombre_archivo, ruta, datetime.now())
+            "INSERT INTO examenes (expediente,documento,fecha) VALUES (?,?,?)",
+            "INSERT INTO examenes (expediente,documento,fecha) VALUES (%s,%s,%s)",
+            (session["expediente"], ruta_supabase, datetime.now())
         )
-        flash(f"✅ Archivo '{nombre_original}' subido correctamente", "success")
+        flash(f"✅ PDF subido correctamente: {nombre_seguro}", "success")
         return redirect("/mis_documentos")
+
     return render_template("subir_pdf.html", usuario=session["usuario"], expediente=session["expediente"])
 
-# ------------------- MIS DOCUMENTOS -------------------
+# MIS DOCUMENTOS
 @app.route("/mis_documentos")
 def mis_documentos():
     if "usuario" not in session:
         return redirect("/login")
     documentos = execute_query(
-        "SELECT * FROM documentos_subidos WHERE expediente=? ORDER BY fecha DESC",
-        "SELECT * FROM documentos_subidos WHERE expediente=%s ORDER BY fecha DESC",
+        "SELECT * FROM examenes WHERE expediente=? ORDER BY fecha DESC",
+        "SELECT * FROM examenes WHERE expediente=%s ORDER BY fecha DESC",
         (session["expediente"],),
         fetchall=True
     )
     return render_template("mis_documentos.html", documentos=documentos, usuario=session["usuario"], expediente=session["expediente"])
 
-# ------------------- DESCARGA SEGURA -------------------
-@app.route("/descargar_privado/<int:id>")
-def descargar_privado(id):
-    doc = execute_query(
-        "SELECT ruta FROM documentos_subidos WHERE id=? AND expediente=?",
-        "SELECT ruta FROM documentos_subidos WHERE id=%s AND expediente=%s",
-        (id, session["expediente"]),
-        fetchone=True
-    )
-    if not doc:
-        flash("❌ No tienes permisos para descargar este archivo", "error")
+# DESCARGA PDF PRIVADA
+@app.route("/descargar_privado/<path:ruta>")
+def descargar_privado(ruta):
+    try:
+        signed = supabase.storage.from_("documentos").create_signed_url(ruta, 3600)
+        return redirect(signed["signedURL"])
+    except Exception as e:
+        flash(f"❌ Error al generar URL de descarga: {e}", "error")
         return redirect("/mis_documentos")
-    signed = supabase.storage.from_("documentos").create_signed_url(doc[0], 300)
-    return redirect(signed["signedURL"])
 
-# ------------------- LOGOUT -------------------
+# LOGOUT
 @app.route("/logout")
 def logout():
     session.clear()

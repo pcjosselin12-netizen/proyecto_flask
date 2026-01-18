@@ -116,19 +116,19 @@
     <a href="/subir_pdf" class="btn-subir">📤 Subir nuevo PDF</a>
 
     <div class="section">
-      <h3>📄 PDFs Subidos</h3>
+      <h3>📄 Documentos y Exámenes</h3>
       {% if documentos %}
         {% for doc in documentos %}
           <div class="documento-item">
             <div class="documento-info">
-              <div class="documento-nombre">📄 {{ doc.nombre_original }}</div>
-              <div class="documento-fecha">Subido: {{ doc.fecha }}</div>
+              <div class="documento-nombre">📄 {{ doc.nombre_original or doc.documento.split('/')[-1] }}</div>
+              <div class="documento-fecha">Fecha: {{ doc.fecha }}</div>
             </div>
-            <a href="/descargar_privado/{{ doc.id }}" class="btn-descargar">⬇️ Descargar</a>
+            <a href="/descargar_privado/{{ doc.ruta or doc.documento }}" class="btn-descargar">⬇️ Descargar</a>
           </div>
         {% endfor %}
       {% else %}
-        <div class="sin-documentos">No has subido ningún documento aún.</div>
+        <div class="sin-documentos">No hay documentos disponibles aún.</div>
       {% endif %}
     </div>
 

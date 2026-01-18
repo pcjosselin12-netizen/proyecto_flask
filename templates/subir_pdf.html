@@ -85,6 +85,7 @@
 </head>
 <body>
   <div class="container">
+    <!-- Mensajes Flash -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, msg in messages %}
@@ -100,17 +101,16 @@
       <strong>Expediente:</strong> {{ expediente }}
     </div>
 
-    <form method="POST" action="/subir_pdf" enctype="multipart/form-data">
+    <form method="POST" action="{{ url_for('subir_pdf') }}" enctype="multipart/form-data">
       <label for="archivo">Selecciona un archivo PDF:</label>
       <input type="file" name="archivo" id="archivo" accept=".pdf" required>
-      
       <button type="submit">Subir PDF</button>
     </form>
 
     <div class="links">
-      <a href="/mis_documentos">📁 Ver mis documentos</a>
-      <a href="/examen">📝 Completar examen</a>
-      <a href="/logout">🚪 Cerrar sesión</a>
+      <a href="{{ url_for('mis_documentos') }}">📁 Ver mis documentos</a>
+      <a href="{{ url_for('examen') }}">📝 Completar examen</a>
+      <a href="{{ url_for('logout') }}">🚪 Cerrar sesión</a>
     </div>
   </div>
 </body>
