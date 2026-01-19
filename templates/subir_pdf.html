@@ -85,7 +85,6 @@
 </head>
 <body>
   <div class="container">
-    <!-- Mensajes Flash -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, msg in messages %}
@@ -102,8 +101,7 @@
     </div>
 
     <form method="POST" action="{{ url_for('subir_pdf') }}" enctype="multipart/form-data">
-      <label for="archivo">Selecciona un archivo PDF:</label>
-      <input type="file" name="archivo" id="archivo" accept=".pdf" required>
+      <input type="file" name="archivo" accept=".pdf" required>
       <button type="submit">Subir PDF</button>
     </form>
 

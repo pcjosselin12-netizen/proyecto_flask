@@ -27,76 +27,21 @@
       font-size: 14px;
       text-align: center;
     }
-    .flash.error {
-      background-color: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-    }
-    .flash.success {
-      background-color: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
-    }
+    .flash.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .flash.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     .section { margin-bottom: 30px; }
-    .section h3 {
-      color: #555;
-      border-bottom: 2px solid #4CAF50;
-      padding-bottom: 10px;
-      margin-bottom: 15px;
-    }
-    .documento-item {
-      background: #f9f9f9;
-      padding: 15px;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      border-left: 4px solid #4CAF50;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+    .section h3 { color: #555; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; margin-bottom: 15px; }
+    .documento-item { background: #f9f9f9; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid #4CAF50; display: flex; justify-content: space-between; align-items: center; }
     .documento-info { flex: 1; }
     .documento-nombre { font-weight: bold; color: #333; margin-bottom: 5px; }
     .documento-fecha { font-size: 12px; color: #666; }
-    .btn-descargar {
-      background-color: #2196F3;
-      color: white;
-      padding: 8px 15px;
-      border: none;
-      border-radius: 6px;
-      text-decoration: none;
-      font-size: 14px;
-      cursor: pointer;
-    }
+    .btn-descargar { background-color: #2196F3; color: white; padding: 8px 15px; border: none; border-radius: 6px; text-decoration: none; font-size: 14px; cursor: pointer; }
     .btn-descargar:hover { background-color: #0b7dda; }
-    .btn-subir {
-      background-color: #4CAF50;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 6px;
-      text-decoration: none;
-      font-size: 16px;
-      display: inline-block;
-      margin-bottom: 20px;
-    }
+    .btn-subir { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 6px; text-decoration: none; font-size: 16px; display: inline-block; margin-bottom: 20px; }
     .btn-subir:hover { background-color: #45a049; }
-    .sin-documentos {
-      text-align: center;
-      color: #666;
-      padding: 20px;
-      font-style: italic;
-    }
-    .links {
-      margin-top: 20px;
-      display: flex;
-      gap: 15px;
-      flex-wrap: wrap;
-    }
-    .links a {
-      color: #0066cc;
-      text-decoration: none;
-      font-size: 14px;
-    }
+    .sin-documentos { text-align: center; color: #666; padding: 20px; font-style: italic; }
+    .links { margin-top: 20px; display: flex; gap: 15px; flex-wrap: wrap; }
+    .links a { color: #0066cc; text-decoration: none; font-size: 14px; }
     .links a:hover { text-decoration: underline; }
   </style>
 </head>
@@ -116,23 +61,26 @@
     <a href="/subir_pdf" class="btn-subir">📤 Subir nuevo PDF</a>
 
     <div class="section">
-      <h3>📄 Documentos y Exámenes</h3>
-      {% if documentos %}
-        {% for doc in documentos %}
-          <div class="documento-item">
-            <div class="documento-info">
-              <div class="documento-nombre">📄 {{ doc.nombre_original or doc.documento.split('/')[-1] }}</div>
-              <div class="documento-fecha">Fecha: {{ doc.fecha }}</div>
-            </div>
-            <a href="/descargar_privado/{{ doc.ruta or doc.documento }}" class="btn-descargar">⬇️ Descargar</a>
-          </div>
-        {% endfor %}
-      {% else %}
-        <div class="sin-documentos">No hay documentos disponibles aún.</div>
-      {% endif %}
-    </div>
+      <h3>📝 Exámenes</h3>
+{% for ex in examenes %}
+  <p>
+    📄 {{ ex.documento }} |
+    <a href="{{ ex.url }}" target="_blank">Descargar</a>
+  </p>
+{% else %}
+  <p>No hay exámenes</p>
+{% endfor %}
 
-    <div class="links">
+<h3>📄 Documentos Subidos</h3>
+{% for doc in documentos %}
+  <p>
+    📄 {{ doc.nombre_original }} |
+    <a href="{{ doc.url }}" target="_blank">Descargar</a>
+  </p>
+{% else %}
+  <p>No hay documentos</p>
+{% endfor %}
+<div class="links">
       <a href="/subir_pdf">📤 Subir PDF</a>
       <a href="/examen">📝 Completar examen</a>
       <a href="/encuesta">📋 Encuesta</a>
@@ -141,3 +89,6 @@
   </div>
 </body>
 </html>
+
+
+      

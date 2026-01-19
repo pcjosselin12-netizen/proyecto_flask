@@ -1,5 +1,11 @@
-Flask==3.1.2
-fpdf2
-gunicorn
+
+flask==3.1.2
+supabase==2.27.2
+fpdf2==2.8.5
 psycopg2-binary
-supabase
+Werkzeug==3.1.5
+gunicorn
+python-dotenv
+
+
+
